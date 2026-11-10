@@ -1,0 +1,7 @@
+# Yalnızca yayınlanan site dosyaları repoya girer
+/*
+!/index.html
+!/scrollcraft.css
+!/scrollcraft.js
+!/.nojekyll
+!/.gitignore

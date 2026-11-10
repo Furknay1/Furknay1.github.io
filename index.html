@@ -1,0 +1,908 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Furkan Ay · Yazılım geliştirici</title>
+<meta name="description" content="Furkan Ay, Fırat Üniversitesi, yazılım mühendisi adayı. Gömülü sistemlerden yerel yapay zekaya uçtan uca projeler.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='7' fill='%23ECEEE9'/><path d='M16 5c4 4 5 8 5 12H11c0-4 1-8 5-12z M11 17h10v7H11z' fill='none' stroke='%232B45D4' stroke-width='2'/></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="scrollcraft.css">
+<style>
+  :root {
+    --sc-canvas:     #ECEEE9;
+    --sc-surface:    #F6F7F3;
+    --sc-ink:        #121821;
+    --sc-ink-soft:   #485264;
+    --sc-accent:     #2B45D4;
+    --sc-accent-ink: #F6F7F3;
+    --sc-font-display: "Archivo", system-ui, sans-serif;
+    --sc-font-text:    "Geist", system-ui, sans-serif;
+    --sc-font-mono:    "Geist Mono", ui-monospace, monospace;
+    --sc-shadow-color: 220 30% 30%;
+
+    --paper: var(--sc-canvas);
+    --grid: color-mix(in oklab, var(--sc-ink) 7%, transparent);
+    --grid-strong: color-mix(in oklab, var(--sc-ink) 12%, transparent);
+    --tele-h: 68px;
+  }
+  @media (max-width: 760px) { :root { --tele-h: 74px; } }
+
+  body { padding-bottom: var(--tele-h); }
+
+  /* ---------------------------------------------------------- drawings -- */
+  .ln {
+    fill: none; stroke: currentColor; stroke-width: 1.6;
+    stroke-linecap: round; stroke-linejoin: round;
+    stroke-dasharray: 1 1;
+    stroke-dashoffset: calc(1 - var(--draw, 1));
+  }
+  .ln--paper { fill: var(--paper); }
+  .ln--thin { stroke-width: 1; }
+  .fill-accent { fill: var(--sc-accent); opacity: var(--draw, 1); }
+  .fill-ink { fill: var(--sc-ink); opacity: var(--draw, 1); }
+  .svg-t {
+    font-family: var(--sc-font-mono); font-size: 11px; letter-spacing: 0.06em;
+    fill: var(--sc-ink-soft); opacity: var(--draw, 1);
+  }
+
+  /* label schema: every object carries the same one */
+  .tag { margin: 0; display: grid; grid-template-columns: 4.6rem 1fr; gap: var(--sc-1) var(--sc-4); font-size: var(--sc-t-sm); }
+  .tag > div { display: contents; }
+  .tag dt {
+    font-family: var(--sc-font-mono); font-size: var(--sc-t-xs); letter-spacing: var(--sc-track-wide);
+    text-transform: uppercase; color: var(--sc-ink-soft); padding-top: 0.18em;
+  }
+  .tag dd { margin: 0; color: var(--sc-ink); line-height: 1.45; }
+  .tag dd.tag__name { font-family: var(--sc-font-display); font-weight: 600; font-size: var(--sc-t-lg); letter-spacing: var(--sc-track-snug); line-height: 1.15; }
+  .tag a { color: var(--sc-accent); }
+  .tag a:hover { text-decoration-thickness: 2px; }
+
+  .mono { font-family: var(--sc-font-mono); font-size: var(--sc-t-xs); letter-spacing: var(--sc-track-wide); text-transform: uppercase; color: var(--sc-ink-soft); }
+
+  .link {
+    color: var(--sc-accent); font-weight: 500; text-decoration: underline;
+    text-decoration-thickness: 1px; text-underline-offset: 0.25em;
+    transition: text-decoration-thickness var(--sc-d-fast) var(--sc-ease-out), color var(--sc-d-fast) var(--sc-ease-out);
+  }
+  .link:hover { text-decoration-thickness: 2px; }
+  .link:active { transform: translateY(1px); }
+
+  /* --------------------------------------------------------------- hero -- */
+  .hero { --p: var(--sc-p, 0); }
+  .hero__stage { background: var(--paper); }
+  .hero__grid {
+    position: absolute; inset: -12vh 0 0 0;
+    background:
+      linear-gradient(var(--grid-strong) 1px, transparent 1px) 0 0 / 120px 120px,
+      linear-gradient(90deg, var(--grid-strong) 1px, transparent 1px) 0 0 / 120px 120px,
+      linear-gradient(var(--grid) 1px, transparent 1px) 0 0 / 24px 24px,
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px) 0 0 / 24px 24px;
+    mask-image: linear-gradient(180deg, #000 0%, #000 70%, transparent 100%);
+  }
+  .hero__orbit {
+    position: absolute; right: -8vw; top: -6vh; width: 74vw; height: auto; color: var(--sc-ink-soft);
+    opacity: 0.55;
+    transform: translate3d(0, calc(var(--p) * 6vh), 0);
+  }
+  .hero__label {
+    position: absolute; top: clamp(1.25rem, 4vh, 2.5rem); left: var(--sc-gutter); right: var(--sc-gutter);
+    display: flex; flex-wrap: wrap; gap: var(--sc-2) var(--sc-6); z-index: 6; margin: 0;
+  }
+  .hero__label span b { color: var(--sc-ink); font-weight: 500; }
+  .hero__name {
+    position: absolute; left: var(--sc-gutter);
+    bottom: calc(var(--tele-h) + clamp(9rem, 22vh, 13rem));
+    z-index: 2; margin: 0;
+    font-family: var(--sc-font-display); font-weight: 800;
+    font-size: clamp(4.5rem, 15vw, 15.5rem); line-height: 0.86; letter-spacing: -0.055em;
+    color: var(--sc-ink);
+    transform-origin: 0 100%;
+    transform: translate3d(0, calc(var(--p) * -4vh), 0) scale(calc(1 - var(--p) * 0.06));
+    opacity: calc(1 - var(--p) * 0.35);
+    animation: rise 900ms var(--sc-ease-out) both;
+  }
+  .hero__name span { display: inline-block; }
+  .hero__sub {
+    position: absolute; left: var(--sc-gutter); bottom: calc(var(--tele-h) + clamp(2rem, 6vh, 3.5rem));
+    z-index: 6; max-width: 34rem; display: grid; gap: var(--sc-4); justify-items: start;
+    animation: rise 900ms 120ms var(--sc-ease-out) both;
+  }
+  .hero__sub p { margin: 0; font-size: var(--sc-t-lg); line-height: 1.42; letter-spacing: var(--sc-track-snug); color: var(--sc-ink); text-wrap: pretty; }
+  .hero__rocket {
+    position: absolute; z-index: 3;
+    /* Nozul (viewBox y=532/640) zemin çizgisine oturur, gövde kulenin
+       umbilikal kollarına dayanır. Kule: right 5vw, kol ucu 17vh içeride. */
+    right: calc(5vw + 10.5vh); bottom: calc(var(--tele-h) + 4vh - 11.14vh);
+    height: 66vh; width: auto; color: var(--sc-ink); overflow: visible;
+    transform: translate3d(0, calc(var(--p) * -78vh), 0);
+  }
+  .hero__plume { transform-origin: 100px 532px; transform: scaleY(calc(0.15 + var(--p) * 1.6)); opacity: calc(var(--p) * 3); }
+  .hero__front {
+    position: absolute; z-index: 4; inset: auto 0 var(--tele-h) 0; height: 34vh; pointer-events: none;
+    color: var(--sc-ink);
+    transform: translate3d(0, calc(var(--p) * 30vh), 0);
+  }
+  .hero__front svg { position: absolute; right: 5vw; bottom: 0; height: 100%; width: auto; overflow: visible; }
+  .hero__ground {
+    position: absolute; left: 0; right: 0; bottom: 0; height: 4vh;
+    background: repeating-linear-gradient(135deg, var(--grid-strong) 0 1px, transparent 1px 9px), var(--paper);
+    border-top: 1.5px solid var(--sc-ink);
+  }
+  @keyframes rise { from { opacity: 0; translate: 0 18px; } to { opacity: 1; translate: 0 0; } }
+
+  /* ---------------------------------------------------------------- bom -- */
+  .bom { padding-block: clamp(5rem, 11vw, 10rem) clamp(4rem, 8vw, 7rem); }
+  .bom__grid { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: var(--sc-8) clamp(2rem, 6vw, 7rem); align-items: start; }
+  .bom__intro h2 { margin-bottom: var(--sc-5); }
+  .bom__intro p { font-size: var(--sc-t-lg); line-height: 1.5; letter-spacing: var(--sc-track-snug); color: var(--sc-ink); max-width: 30ch; margin: 0; }
+  .bom__intro p + p { margin-top: var(--sc-4); font-size: var(--sc-t-base); color: var(--sc-ink-soft); max-width: 44ch; letter-spacing: var(--sc-track-normal); }
+  .parts { width: 100%; border-collapse: collapse; font-size: var(--sc-t-sm); }
+  .parts caption { text-align: left; padding-bottom: var(--sc-3); }
+  .parts th, .parts td { text-align: left; vertical-align: top; padding: var(--sc-3) var(--sc-4) var(--sc-3) 0; border-top: 1px solid var(--sc-hairline-strong); }
+  .parts tr:last-child td, .parts tr:last-child th { border-bottom: 1px solid var(--sc-hairline-strong); }
+  .parts th { font-family: var(--sc-font-mono); font-weight: 400; font-size: var(--sc-t-xs); letter-spacing: var(--sc-track-wide); text-transform: uppercase; color: var(--sc-ink-soft); width: 6.5rem; padding-top: 0.95rem; }
+  .parts td:first-of-type { font-family: var(--sc-font-display); font-weight: 600; font-size: var(--sc-t-base); }
+  .parts td:last-child { color: var(--sc-ink-soft); }
+
+  /* ----------------------------------------------------------- archive -- */
+  .arch__stage { display: flex; align-items: center; padding-bottom: var(--tele-h); }
+  .rail { gap: clamp(2.5rem, 5vw, 5.5rem); padding-inline: var(--sc-gutter) 0; align-items: center; }
+  .rail__lead { flex: 0 0 clamp(17rem, 26vw, 24rem); }
+  .rail__lead p { margin-top: var(--sc-4); color: var(--sc-ink-soft); max-width: 30ch; }
+  .obj { flex: 0 0 clamp(17rem, 30vw, 27rem); display: grid; gap: var(--sc-5); }
+  .obj__draw {
+    aspect-ratio: 4 / 3; color: var(--sc-ink); position: relative;
+    background:
+      linear-gradient(var(--grid) 1px, transparent 1px) 0 0 / 20px 20px,
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px) 0 0 / 20px 20px,
+      var(--sc-surface);
+    border: 1px solid var(--sc-hairline-strong);
+    border-radius: var(--sc-r-sm);
+    box-shadow: var(--sc-e1);
+  }
+  .obj__draw svg { width: 100%; height: 100%; }
+  .obj__draw::after {
+    content: attr(data-no); position: absolute; top: 10px; left: 12px;
+    font-family: var(--sc-font-mono); font-size: 11px; letter-spacing: 0.08em; color: var(--sc-ink-soft);
+  }
+  .rail__end { flex: 0 0 clamp(15rem, 22vw, 20rem); padding-right: var(--sc-gutter); }
+  .rail__end p { font-family: var(--sc-font-display); font-size: var(--sc-t-xl); font-weight: 500; letter-spacing: var(--sc-track-snug); line-height: 1.18; margin: 0; }
+  .rail__end p + p { margin-top: var(--sc-4); font-family: var(--sc-font-text); font-size: var(--sc-t-base); color: var(--sc-ink-soft); letter-spacing: 0; line-height: 1.6; }
+  @media (prefers-reduced-motion: no-preference) {
+    .obj:not(:first-of-type) { opacity: calc(0.55 + var(--draw, 1) * 0.45); }
+  }
+
+  .breath { height: 30vh; }
+
+  /* -------------------------------------------------------------- peak -- */
+  .peak { --a: 0; --b: 0; --c1: 0; --c2: 0; --c3: 0; }
+  .peak__stage {
+    display: grid; grid-template-columns: minmax(0, 4fr) minmax(0, 8fr); gap: clamp(1.5rem, 4vw, 4rem);
+    align-items: center; padding: clamp(1.5rem, 5vh, 3.5rem) var(--sc-gutter) calc(var(--tele-h) + clamp(1.5rem, 4vh, 3rem));
+    background:
+      linear-gradient(var(--grid) 1px, transparent 1px) 0 0 / 24px 24px,
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px) 0 0 / 24px 24px;
+  }
+  .peak__copy { display: grid; gap: var(--sc-6); align-content: center; }
+  .peak__copy h2 { font-size: var(--sc-t-3xl); }
+  .peak__fig { margin: 0; color: var(--sc-ink); display: grid; gap: var(--sc-3); }
+  .peak__fig svg { width: 100%; height: auto; overflow: visible; }
+  .peak__fig figcaption { justify-self: end; }
+  .peak .g-air { --draw: var(--a); }
+  .peak .g-dim { --draw: var(--b); }
+  .peak .g-c1 { --draw: var(--c1); }
+  .peak .g-c2 { --draw: var(--c2); }
+  .peak .g-c3 { --draw: var(--c3); }
+  .callout circle.dot { fill: var(--sc-accent); opacity: var(--draw); }
+  .callout text { font-family: var(--sc-font-mono); font-size: 13px; fill: var(--sc-accent-ink); opacity: var(--draw); }
+  .callout text.callout__label {
+    font-family: var(--sc-font-text); font-weight: 500; font-size: 20px; letter-spacing: -0.01em;
+    fill: var(--sc-ink);
+  }
+  @media (max-width: 860px) { .callout text.callout__label { font-size: 34px; } }
+
+  /* ------------------------------------------------------------- field -- */
+  .field { padding-block: clamp(4rem, 9vw, 8rem); }
+  .field__grid { display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: var(--sc-8) clamp(2rem, 6vw, 6rem); align-items: center; }
+  .field__fig { margin: 0; color: var(--sc-ink); background: var(--sc-surface); border: 1px solid var(--sc-hairline-strong); border-radius: var(--sc-r-sm); box-shadow: var(--sc-e2); padding: clamp(1rem, 2.5vw, 2rem); }
+  .field__fig svg { width: 100%; height: auto; }
+  .field__copy h2 { margin-bottom: var(--sc-5); }
+  .field__copy > p { font-size: var(--sc-t-lg); line-height: 1.5; letter-spacing: var(--sc-track-snug); max-width: 30ch; margin: 0 0 var(--sc-6); }
+  .t-red { fill: var(--sc-accent); }
+
+  /* -------------------------------------------------------------- close -- */
+  .close__stage { display: grid; align-content: center; padding: var(--sc-7) var(--sc-gutter) calc(var(--tele-h) + var(--sc-5)); }
+  .plate {
+    position: relative; width: min(100%, 60rem); margin-inline: auto;
+    display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: var(--sc-7);
+    padding: clamp(1.5rem, 4vw, 3.5rem);
+    border: 1.5px dashed var(--sc-ink); border-radius: var(--sc-r-sm);
+    background: var(--sc-surface);
+    box-shadow: var(--sc-e2);
+  }
+  .plate h2 { font-size: var(--sc-t-3xl); }
+  .plate__ask { display: grid; gap: var(--sc-6); align-content: start; }
+  .plate__links { display: flex; flex-wrap: wrap; gap: var(--sc-3) var(--sc-6); }
+  .plate__links .link--main { font-size: var(--sc-t-lg); }
+  .colophon { width: min(100%, 60rem); margin: var(--sc-6) auto 0; display: flex; justify-content: space-between; gap: var(--sc-4); flex-wrap: wrap; }
+
+  /* ---------------------------------------------- signature: flight log -- */
+  .tele {
+    position: fixed; z-index: var(--sc-z-chrome); left: 0; right: 0; bottom: 0; height: var(--tele-h);
+    display: grid; grid-template-columns: clamp(14rem, 21vw, 19rem) minmax(0, 1fr); align-items: stretch;
+    background: color-mix(in oklab, var(--sc-surface) 96%, transparent);
+    border-top: 1px solid var(--sc-hairline-strong);
+    box-shadow: 0 -6px 18px -12px hsl(var(--sc-shadow-color) / 0.35);
+  }
+  .tele__read { display: grid; align-content: center; gap: 2px; padding-inline: var(--sc-gutter) var(--sc-4); border-right: 1px solid var(--sc-hairline); min-width: 0; }
+  .tele__read .mono { font-size: 10.5px; }
+  .tele__t { font-family: var(--sc-font-mono); font-size: 12px; color: var(--sc-accent); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .tele__now { font-family: var(--sc-font-mono); font-size: 13px; color: var(--sc-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tele__track { position: relative; margin-inline: var(--sc-6) var(--sc-gutter); }
+  .tele__track svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+  .tele__base { fill: none; stroke: var(--sc-hairline-strong); stroke-width: 1.5; stroke-dasharray: 3 4; }
+  .tele__done { fill: none; stroke: var(--sc-accent); stroke-width: 2; }
+  .tele__axis { stroke: var(--sc-hairline-strong); stroke-width: 1; }
+  .tele__yr { font-family: var(--sc-font-mono); font-size: 9.5px; fill: var(--sc-ink-soft); letter-spacing: 0.04em; }
+  .tele__head { fill: var(--sc-accent); }
+  .tele__ring { fill: none; stroke: var(--sc-accent); stroke-width: 1; opacity: 0.45; }
+  .mk {
+    position: absolute; width: 28px; height: 28px; margin: -14px 0 0 -14px; padding: 0; border: 0; background: none;
+    display: grid; place-items: center; cursor: pointer; border-radius: 50%;
+  }
+  .mk::before {
+    content: ""; width: 9px; height: 9px; border-radius: 50%;
+    background: var(--sc-surface); border: 1.5px solid var(--sc-ink-soft);
+    transition: background-color var(--sc-d-fast) var(--sc-ease-out), border-color var(--sc-d-fast) var(--sc-ease-out), transform var(--sc-d-fast) var(--sc-ease-out);
+  }
+  .mk.is-passed::before { background: var(--sc-accent); border-color: var(--sc-accent); }
+  .mk.is-current::before { transform: scale(1.35); }
+  .mk:active::before { transform: scale(0.9); }
+  .mk__tip {
+    position: absolute; bottom: calc(100% + 6px); left: 50%; translate: -50% 4px; opacity: 0; pointer-events: none;
+    white-space: nowrap; background: var(--sc-ink); color: var(--sc-surface); padding: 5px 8px; border-radius: var(--sc-r-sm);
+    font-family: var(--sc-font-mono); font-size: 11px; letter-spacing: 0.03em; box-shadow: var(--sc-e2);
+    transition: opacity var(--sc-d-fast) var(--sc-ease-out), translate var(--sc-d-fast) var(--sc-ease-out);
+  }
+  .mk:last-child .mk__tip { left: auto; right: 0; translate: 0 4px; }
+  .mk:focus-visible .mk__tip { opacity: 1; translate: -50% 0; }
+  .mk:last-child:focus-visible .mk__tip { translate: 0 0; }
+  @media (hover: hover) and (pointer: fine) {
+    .mk:hover::before { border-color: var(--sc-accent); transform: scale(1.35); }
+    .mk:hover .mk__tip { opacity: 1; translate: -50% 0; }
+    .mk:last-child:hover .mk__tip { translate: 0 0; }
+  }
+
+  /* ------------------------------------------------------------- phone -- */
+  @media (max-width: 860px) {
+    .bom__grid, .field__grid, .plate { grid-template-columns: 1fr; }
+    .plate { gap: var(--sc-5); }
+    .peak__stage { grid-template-columns: 1fr; align-content: center; gap: var(--sc-5); }
+    .peak__copy { gap: var(--sc-4); }
+    .peak__copy h2 { font-size: var(--sc-t-2xl); }
+    .peak__copy .tag { display: none; }
+  }
+  @media (max-width: 760px) {
+    .hero__name { font-size: clamp(4.2rem, 25vw, 8rem); bottom: calc(var(--tele-h) + 11.5rem); }
+    .hero__name span { display: block; }
+    .hero__name { z-index: 5; }
+    .hero__sub { bottom: calc(var(--tele-h) + 1.75rem); right: var(--sc-gutter); }
+    .hero__sub p { font-size: var(--sc-t-base); max-width: 12.5rem; }
+    .hero__rocket { right: calc(-6vw + 5.9vh); height: 54vh; bottom: calc(var(--tele-h) + 4vh - 9.11vh); }
+    .hero__front { height: 22vh; }
+    .hero__front svg { right: -6vw; }
+    .hero__label { gap: var(--sc-1) var(--sc-4); }
+    .hero__label .hide-s { display: none; }
+    .tele { grid-template-columns: 1fr; grid-template-rows: 28px 1fr; }
+    .tele__read { border-right: 0; padding-inline: var(--sc-gutter); grid-auto-flow: column; justify-content: space-between; align-items: end; gap: var(--sc-3); }
+    .tele__read .mono { display: none; }
+    .tele__track { margin-inline: var(--sc-gutter); }
+    .tele__yr { display: none; }
+    .obj { flex-basis: 78vw; }
+    .rail__lead, .rail__end { flex-basis: 74vw; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .hero__name, .hero__sub { animation: none; transform: none; opacity: 1; }
+    .hero__rocket, .hero__front, .hero__orbit { transform: none; }
+    .hero__plume { opacity: 0; }
+    .ln { stroke-dashoffset: 0; }
+    .peak { --a: 1 !important; --b: 1 !important; --c1: 1 !important; --c2: 1 !important; --c3: 1 !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="sc-grain" aria-hidden="true"></div>
+
+<main id="top">
+
+  <!-- 00 · Kalkış. Pin, katmanlı. Planlar: grid (arka) > isim > roket > kule + zemin (ön) -->
+  <section class="hero" id="o-00" data-sc-act="pin" data-sc-span="1.9" data-sc-drift="#ECEEE9">
+    <div data-sc-stage class="hero__stage">
+      <div class="hero__grid" data-sc-parallax="1.2" aria-hidden="true"></div>
+
+      <svg class="hero__orbit" viewBox="0 0 1000 700" aria-hidden="true">
+        <path class="ln ln--thin" pathLength="1" d="M40 690 C 260 640 520 520 700 300 S 930 40 990 10"/>
+        <path class="ln ln--thin" pathLength="1" d="M120 700 C 380 600 620 470 820 200"/>
+        <circle class="ln ln--thin" pathLength="1" cx="700" cy="300" r="5"/>
+        <text class="svg-t" x="712" y="296">apoje</text>
+      </svg>
+
+      <p class="hero__label mono">
+        <span>No. <b>00</b></span>
+        <span><b>Furkan Ay</b></span>
+        <span>Yazılım mühendisi adayı, Fırat Üniversitesi</span>
+        <span class="hide-s">İstanbul &amp; Elazığ</span>
+      </p>
+
+      <h1 class="hero__name"><span>Furkan</span> <span>Ay</span></h1>
+
+      <svg class="hero__rocket" viewBox="0 0 200 640" role="img" aria-label="Roket çizimi">
+        <g class="hero__plume">
+          <path class="ln" pathLength="1" d="M78 534 C 70 580 88 610 100 640 C 112 610 130 580 122 534"/>
+          <path class="ln ln--thin" pathLength="1" d="M90 536 C 86 566 94 588 100 604 C 106 588 114 566 110 536"/>
+        </g>
+        <path class="ln ln--paper" pathLength="1" d="M100 18 C 128 54 140 104 140 160 L 60 160 C 60 104 72 54 100 18 Z"/>
+        <path class="ln ln--paper" pathLength="1" d="M60 400 L 18 498 L 18 522 L 60 492 Z"/>
+        <path class="ln ln--paper" pathLength="1" d="M140 400 L 182 498 L 182 522 L 140 492 Z"/>
+        <rect class="ln ln--paper" pathLength="1" x="60" y="160" width="80" height="332"/>
+        <rect class="fill-accent" x="60.8" y="300" width="78.4" height="22"/>
+        <path class="ln ln--thin" pathLength="1" d="M60 236 H140 M60 420 H140 M100 160 V180"/>
+        <circle class="ln ln--paper" pathLength="1" cx="100" cy="206" r="13"/>
+        <path class="ln ln--paper" pathLength="1" d="M76 492 L 68 532 L 132 532 L 124 492 Z"/>
+        <path class="ln ln--thin" pathLength="1" d="M100 492 V 532"/>
+      </svg>
+
+      <div class="hero__front" aria-hidden="true">
+        <svg viewBox="0 0 220 300" preserveAspectRatio="xMaxYMax meet">
+          <path class="ln" pathLength="1" d="M130 300 V 10 M190 300 V 10 M130 10 H 190"/>
+          <path class="ln ln--thin" pathLength="1" d="M130 300 L190 250 L130 200 L190 150 L130 100 L190 50 L130 10 M190 300 L130 250 L190 200 L130 150 L190 100 L130 50 L190 10"/>
+          <path class="ln" pathLength="1" d="M130 120 H 70 M130 200 H 84"/>
+          <path class="ln ln--thin" pathLength="1" d="M70 108 V 132 M84 188 V 212"/>
+          <text class="svg-t" x="62" y="100">umbilikal</text>
+        </svg>
+        <div class="hero__ground"></div>
+      </div>
+
+      <div class="hero__sub">
+        <p>Gömülü sistemlerden yapay zeka destekli modellere kadar uçtan uca yazılım çözümleri geliştiriyorum.</p>
+        <a class="link" href="mailto:furknay1@gmail.com">E-posta gönder</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- 01 · Envanter. Flow + in. -->
+  <section class="bom" id="bom" data-sc-act="flow">
+    <div class="sc-wrap bom__grid">
+      <div class="bom__intro" data-sc-in>
+        <h2 class="sc-display sc-display--md">Envanter</h2>
+        <p>Sensör okumalarından büyük dil modellerine kadar mühendisliğin her katmanında çözüm üretiyorum.</p>
+        <p>Görüntü işleme, yerel yapay zeka entegrasyonları, siber güvenlik ve modern web/mobil uygulamaları üzerine çalışıyorum. Veritabanı mimarisinden son kullanıcı arayüzüne kadar projenin tüm yaşam döngüsünde görev alarak güvenli ve performanslı sistemler tasarlıyorum.</p>
+      </div>
+      <table class="parts" data-sc-in>
+        <caption class="mono">Katmanlara göre teknoloji yığınım</caption>
+        <tbody>
+          <tr><th scope="row">Dil</th><td>Python, C#, Java, Dart</td><td>Arka uç, masaüstü, mobil</td></tr>
+          <tr><th scope="row">Yapay zeka</th><td>Yerel LLM'ler</td><td>Ollama, LM Studio, llama.cpp (GGUF)</td></tr>
+          <tr><th scope="row">Veri</th><td>SQL, SQLite</td><td>Firebase ve Supabase ile BaaS</td></tr>
+          <tr><th scope="row">Arayüz</th><td>Flutter, React</td><td>Tailwind CSS, WinForms</td></tr>
+          <tr><th scope="row">Simülasyon</th><td>Unity</td><td>Oyun motoru, simülasyon</td></tr>
+          <tr><th scope="row">Donanım</th><td>Arduino</td><td>Sensör okuma, devre tasarımı</td></tr>
+          <tr><th scope="row">Ağ</th><td>OCPP, Nmap</td><td>Protokoller, güvenlik taraması</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 02 · Arşiv. Pan, galerinin omurgası. -->
+  <section class="arch" id="arsiv" data-sc-act="pan" data-sc-span="4.2" data-sc-drift="#EAEDE8">
+    <div data-sc-stage class="arch__stage">
+      <div class="rail" data-sc-pan="0.02">
+
+        <div class="rail__lead">
+          <h2 class="sc-display sc-display--md">Arşiv</h2>
+          <p>2019'dan bugüne bitmiş işler. Her biri bir çizim, her çizimin aynı etiketi.</p>
+        </div>
+
+        <article class="obj" id="o-01" aria-labelledby="n-01">
+          <div class="obj__draw" data-no="01">
+            <svg viewBox="0 0 400 300" role="img" aria-label="Arduino kartı çizimi">
+              <rect class="ln" pathLength="1" x="70" y="62" width="270" height="170" rx="8"/>
+              <rect class="ln" pathLength="1" x="46" y="88" width="52" height="40" rx="3"/>
+              <rect class="ln" pathLength="1" x="50" y="170" width="40" height="38" rx="4"/>
+              <rect class="ln" pathLength="1" x="196" y="150" width="112" height="30" rx="2"/>
+              <path class="ln ln--thin" pathLength="1" d="M204 150v-8M216 150v-8M228 150v-8M240 150v-8M252 150v-8M264 150v-8M276 150v-8M288 150v-8M300 150v-8M204 180v8M216 180v8M228 180v8M240 180v8M252 180v8M264 180v8M276 180v8M288 180v8M300 180v8"/>
+              <rect class="ln" pathLength="1" x="134" y="72" width="196" height="14"/>
+              <rect class="ln" pathLength="1" x="166" y="208" width="164" height="14"/>
+              <circle class="ln" pathLength="1" cx="90" cy="222" r="5"/>
+              <circle class="ln" pathLength="1" cx="320" cy="104" r="5"/>
+              <circle class="fill-accent" cx="128" cy="112" r="5"/>
+              <text class="svg-t" x="138" y="116">LED 13</text>
+              <path class="ln ln--thin" pathLength="1" d="M70 258 H340 M70 252 V264 M340 252 V264"/>
+              <text class="svg-t" x="178" y="280">68,6 mm</text>
+            </svg>
+          </div>
+          <dl class="tag">
+            <div><dt>No.</dt><dd>01</dd></div>
+            <div><dt>Ad</dt><dd class="tag__name" id="n-01">Arduino geliştirme</dd></div>
+            <div><dt>Dönem</dt><dd>2019</dd></div>
+            <div><dt>Katman</dt><dd>Gömülü sistem</dd></div>
+            <div><dt>Not</dt><dd>İlk adım: sensör okuma ve temel devre tasarımı.</dd></div>
+            <div><dt>Kaynak</dt><dd>Profil README</dd></div>
+          </dl>
+        </article>
+
+        <article class="obj" id="o-02" aria-labelledby="n-02">
+          <div class="obj__draw" data-no="02">
+            <svg viewBox="0 0 400 300" role="img" aria-label="Yer istasyonu anteni ve telemetri ekranı çizimi">
+              <path class="ln" pathLength="1" d="M60 168 Q 96 60 214 64"/>
+              <path class="ln ln--thin" pathLength="1" d="M60 168 L 214 64"/>
+              <path class="ln" pathLength="1" d="M137 116 L 168 150"/>
+              <circle class="ln" pathLength="1" cx="171" cy="153" r="5"/>
+              <path class="ln" pathLength="1" d="M128 128 L 112 236 M128 128 L 150 236 M90 236 H 172"/>
+              <rect class="ln" pathLength="1" x="236" y="120" width="124" height="88" rx="4"/>
+              <path class="ln" pathLength="1" d="M246 196 C 270 194 286 186 300 168 S 330 132 350 128"/>
+              <path class="ln ln--thin" pathLength="1" d="M246 196 H 350 M246 132 V 196"/>
+              <path class="ln" pathLength="1" d="M298 208 V 226 M278 236 H 318"/>
+              <path class="ln ln--thin" pathLength="1" d="M214 40 Q 300 20 360 60"/>
+              <circle class="fill-accent" cx="360" cy="60" r="5"/>
+              <text class="svg-t" x="250" y="146">irtifa</text>
+            </svg>
+          </div>
+          <dl class="tag">
+            <div><dt>No.</dt><dd>02</dd></div>
+            <div><dt>Ad</dt><dd class="tag__name" id="n-02">Roket simülasyonu ve yer istasyonu</dd></div>
+            <div><dt>Dönem</dt><dd>Nisan – Haziran 2024</dd></div>
+            <div><dt>Katman</dt><dd>Simülasyon, arayüz</dd></div>
+            <div><dt>Not</dt><dd>Uçuş dinamiklerinin simülasyonu ve telemetri verisi için yer istasyonu arayüzü.</dd></div>
+            <div><dt>Kaynak</dt><dd>Profil README</dd></div>
+          </dl>
+        </article>
+
+        <article class="obj" id="o-03" aria-labelledby="n-03">
+          <div class="obj__draw" data-no="03">
+            <svg viewBox="0 0 400 300" role="img" aria-label="Akaryakıt pompası çizimi">
+              <rect class="ln" pathLength="1" x="128" y="46" width="132" height="210" rx="10"/>
+              <rect class="ln" pathLength="1" x="146" y="68" width="96" height="48" rx="3"/>
+              <path class="ln ln--thin" pathLength="1" d="M156 84 H 230 M156 100 H 206"/>
+              <rect class="ln" pathLength="1" x="146" y="130" width="96" height="30" rx="3"/>
+              <rect class="fill-accent" x="146" y="176" width="96" height="10"/>
+              <path class="ln" pathLength="1" d="M260 120 H 282 V 150 H 260"/>
+              <path class="ln" pathLength="1" d="M260 210 C 320 210 330 150 300 130"/>
+              <path class="ln" pathLength="1" d="M282 128 L 312 112 L 326 124 L 302 142 Z"/>
+              <path class="ln" pathLength="1" d="M108 256 H 290"/>
+              <text class="svg-t" x="152" y="149">STOK · FATURA</text>
+            </svg>
+          </div>
+          <dl class="tag">
+            <div><dt>No.</dt><dd>03</dd></div>
+            <div><dt>Ad</dt><dd class="tag__name" id="n-03">Benzin istasyonu otomasyonu</dd></div>
+            <div><dt>Dönem</dt><dd>Kasım 2024 – Ocak 2025</dd></div>
+            <div><dt>Katman</dt><dd>Masaüstü, veritabanı</dd></div>
+            <div><dt>Not</dt><dd>C# WinForms ve SQL Server LocalDB. Rol tabanlı giriş, personel, pompa, stok, tedarikçi ve fatura modülleri.</dd></div>
+            <div><dt>Kaynak</dt><dd><a href="https://github.com/Furknay1/Petrol_pump">Petrol_pump</a></dd></div>
+          </dl>
+        </article>
+
+        <article class="obj" id="o-04" aria-labelledby="n-04">
+          <div class="obj__draw" data-no="04">
+            <svg viewBox="0 0 400 300" role="img" aria-label="Ağ tarama radarı çizimi">
+              <circle class="ln" pathLength="1" cx="200" cy="150" r="40"/>
+              <circle class="ln" pathLength="1" cx="200" cy="150" r="80"/>
+              <circle class="ln" pathLength="1" cx="200" cy="150" r="118"/>
+              <path class="ln ln--thin" pathLength="1" d="M82 150 H 318 M200 32 V 268"/>
+              <path class="ln" pathLength="1" d="M200 150 L 290 74"/>
+              <rect class="ln" pathLength="1" x="246" y="104" width="12" height="12"/>
+              <rect class="ln" pathLength="1" x="134" y="96" width="12" height="12"/>
+              <rect class="ln" pathLength="1" x="160" y="206" width="12" height="12"/>
+              <rect class="fill-accent" x="282" y="178" width="12" height="12"/>
+              <text class="svg-t" x="262" y="114">:22</text>
+              <text class="svg-t" x="104" y="92">:80</text>
+              <text class="svg-t" x="178" y="232">:443</text>
+              <text class="svg-t" x="300" y="188">açık</text>
+            </svg>
+          </div>
+          <dl class="tag">
+            <div><dt>No.</dt><dd>04</dd></div>
+            <div><dt>Ad</dt><dd class="tag__name" id="n-04">Nmap ile port tarama</dd></div>
+            <div><dt>Dönem</dt><dd>Mart – Haziran 2025</dd></div>
+            <div><dt>Katman</dt><dd>Ağ güvenliği</dd></div>
+            <div><dt>Not</dt><dd>Ağ güvenliği ve zafiyet tarama analizleri üzerine geliştirme.</dd></div>
+            <div><dt>Kaynak</dt><dd>Profil README</dd></div>
+          </dl>
+        </article>
+
+        <article class="obj" id="o-05" aria-labelledby="n-05">
+          <div class="obj__draw" data-no="05">
+            <svg viewBox="0 0 400 300" role="img" aria-label="Mikrofon, ses dalgası ve yerel model çipi çizimi">
+              <rect class="ln" pathLength="1" x="96" y="40" width="56" height="104" rx="28"/>
+              <path class="ln ln--thin" pathLength="1" d="M104 70 H 144 M104 86 H 144 M104 102 H 144"/>
+              <path class="ln" pathLength="1" d="M78 112 C 78 172 170 172 170 112"/>
+              <path class="ln" pathLength="1" d="M124 158 V 186 M100 186 H 148"/>
+              <path class="ln" pathLength="1" d="M40 238 H 70 L 78 220 L 88 256 L 98 206 L 110 262 L 120 226 L 130 246 L 140 232 L 150 238 H 196"/>
+              <path class="ln ln--thin" pathLength="1" d="M196 238 H 250 V 120 H 268"/>
+              <rect class="ln" pathLength="1" x="268" y="88" width="84" height="64" rx="4"/>
+              <path class="ln ln--thin" pathLength="1" d="M282 88v-10M298 88v-10M314 88v-10M330 88v-10M282 152v10M298 152v10M314 152v10M330 152v10"/>
+              <text class="svg-t" x="294" y="124">LLM</text>
+              <circle class="fill-accent" cx="250" cy="238" r="5"/>
+              <text class="svg-t" x="268" y="242">çevrimdışı</text>
+            </svg>
+          </div>
+          <dl class="tag">
+            <div><dt>No.</dt><dd>05</dd></div>
+            <div><dt>Ad</dt><dd class="tag__name" id="n-05">Yerel sesli asistan</dd></div>
+            <div><dt>Dönem</dt><dd>Temmuz – Ağustos 2025</dd></div>
+            <div><dt>Katman</dt><dd>Yapay zeka</dd></div>
+            <div><dt>Not</dt><dd>Python ve yerel LLM'ler (Ollama, LM Studio). Tamamen çevrimdışı çalışan sesli asistan.</dd></div>
+            <div><dt>Kaynak</dt><dd><a href="https://github.com/Furknay1/Yerel_ai_sohbet">Yerel_ai_sohbet</a> (ilgili depo)</dd></div>
+          </dl>
+        </article>
+
+        <article class="obj" id="o-06" aria-labelledby="n-06">
+          <div class="obj__draw" data-no="06">
+            <svg viewBox="0 0 400 300" role="img" aria-label="Elektrikli araç şarj istasyonu çizimi">
+              <rect class="ln" pathLength="1" x="112" y="36" width="96" height="222" rx="12"/>
+              <rect class="ln" pathLength="1" x="130" y="58" width="60" height="42" rx="3"/>
+              <path class="fill-accent" d="M164 112 L 146 142 H 160 L 154 166 L 176 132 H 162 Z"/>
+              <rect class="ln" pathLength="1" x="208" y="150" width="16" height="30" rx="3"/>
+              <path class="ln" pathLength="1" d="M224 166 C 270 166 250 236 300 230"/>
+              <path class="ln" pathLength="1" d="M300 218 H 324 V 242 H 300 Z M324 224 H 334 M324 236 H 334"/>
+              <path class="ln" pathLength="1" d="M90 258 H 360"/>
+              <text class="svg-t" x="138" y="84">OCPP</text>
+              <path class="ln ln--thin" pathLength="1" d="M160 36 V 20 Q 160 10 172 10 H 300"/>
+              <text class="svg-t" x="232" y="28">merkezi sistem</text>
+            </svg>
+          </div>
+          <dl class="tag">
+            <div><dt>No.</dt><dd>06</dd></div>
+            <div><dt>Ad</dt><dd class="tag__name" id="n-06">OCPP şarj yönetim sistemi</dd></div>
+            <div><dt>Dönem</dt><dd>Ekim 2025 – Ocak 2026</dd></div>
+            <div><dt>Katman</dt><dd>Protokol, altyapı</dd></div>
+            <div><dt>Not</dt><dd>Elektrikli araçlar için OCPP protokolü üzerinde şarj istasyonu haberleşmesi ve yönetim altyapısı.</dd></div>
+            <div><dt>Kaynak</dt><dd>Profil README</dd></div>
+          </dl>
+        </article>
+
+        <div class="rail__end">
+          <p>Bitenler bu kadar.</p>
+          <p>Halen süren iki proje masada. Biri havada, biri sahada.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="breath" aria-hidden="true"></div>
+
+  <!-- 03 · Masada. Zirve. Pin, en uzun alan. Çizim kaydırmayla kendini çiziyor. -->
+  <section class="peak" id="o-07" data-sc-act="pin" data-sc-span="4.8" data-sc-drift="#E3E7EA">
+    <div data-sc-stage class="peak__stage">
+      <div class="peak__copy">
+        <h2 class="sc-display">Uçak bakımına yapay zeka.</h2>
+        <dl class="tag">
+          <div><dt>No.</dt><dd>07</dd></div>
+          <div><dt>Ad</dt><dd class="tag__name">Yapay zekayla uçak bakım</dd></div>
+          <div><dt>Dönem</dt><dd>Kasım 2025, halen</dd></div>
+          <div><dt>Katman</dt><dd>Yapay zeka, mobil</dd></div>
+          <div><dt>Destek</dt><dd>TÜBİTAK 2209-B</dd></div>
+        </dl>
+      </div>
+
+      <figure class="peak__fig">
+        <svg viewBox="0 0 1000 420" role="img" aria-label="Yan görünüşten şematik yolcu uçağı çizimi. İşaretli noktalar: 1 arıza tespiti, 2 bakım süreci, 3 Flutter arayüz">
+          <g class="g-air">
+            <path class="ln ln--paper" pathLength="1" d="M800 162 L 892 44 L 944 44 L 912 162 Z"/>
+            <path class="ln ln--paper" pathLength="1" d="M92 210 C 108 174 166 160 232 160 L 820 160 C 856 158 880 140 902 112 L 936 112 L 918 200 C 908 230 880 246 840 248 L 222 250 C 150 250 102 236 92 210 Z"/>
+            <path class="ln" pathLength="1" d="M122 192 L 150 178 L 182 178 L 176 194 Z"/>
+            <path class="ln ln--thin" pathLength="1" id="windows" d=""/>
+            <rect class="ln ln--thin" pathLength="1" x="236" y="174" width="18" height="44" rx="3"/>
+            <rect class="ln ln--thin" pathLength="1" x="760" y="174" width="16" height="40" rx="3"/>
+            <path class="ln ln--paper" pathLength="1" d="M856 178 L 962 150 L 976 160 L 900 194 Z"/>
+            <path class="ln ln--paper" pathLength="1" d="M410 236 L 650 304 L 712 304 L 566 232 Z"/>
+            <path class="ln ln--paper" pathLength="1" d="M468 262 H 590 A 22 22 0 0 1 590 306 H 468 A 22 22 0 0 1 468 262 Z"/>
+            <path class="ln ln--thin" pathLength="1" d="M462 264 C 452 274 452 294 462 304"/>
+            <path class="ln" pathLength="1" d="M204 250 V 296 M560 304 V 330"/>
+            <circle class="ln" pathLength="1" cx="204" cy="306" r="10"/>
+            <circle class="ln" pathLength="1" cx="546" cy="340" r="12"/>
+            <circle class="ln" pathLength="1" cx="574" cy="340" r="12"/>
+            <rect class="fill-accent" x="300" y="226" width="440" height="6"/>
+          </g>
+          <g class="g-dim">
+            <path class="ln ln--thin" pathLength="1" d="M92 384 H 944 M92 374 V 394 M944 374 V 394"/>
+            <text class="svg-t" x="486" y="408">gövde boyu</text>
+            <path class="ln ln--thin" pathLength="1" d="M978 44 V 352 M968 44 H 988 M968 352 H 988"/>
+            <text class="svg-t" x="930" y="30">yükseklik</text>
+            <path class="ln ln--thin" pathLength="1" d="M60 352 H 940"/>
+          </g>
+          <g class="g-c1 callout">
+            <path class="ln" pathLength="1" d="M530 284 L 720 326 H 900"/>
+            <circle class="dot" cx="530" cy="284" r="13"/>
+            <text x="525.5" y="288.5">1</text>
+            <text class="callout__label" x="726" y="316">Arıza tespiti</text>
+          </g>
+          <g class="g-c2 callout">
+            <path class="ln" pathLength="1" d="M420 196 L 470 96 H 640"/>
+            <circle class="dot" cx="420" cy="196" r="13"/>
+            <text x="415.5" y="200.5">2</text>
+            <text class="callout__label" x="476" y="86">Bakım süreci</text>
+          </g>
+          <g class="g-c3 callout">
+            <path class="ln" pathLength="1" d="M156 186 L 120 96 H 30"/>
+            <circle class="dot" cx="156" cy="186" r="13"/>
+            <text x="151.5" y="190.5">3</text>
+            <text class="callout__label" x="30" y="86">Flutter arayüz</text>
+          </g>
+        </svg>
+        <figcaption class="mono">Şematik çizim, ölçeksiz</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- 04 · Saha. Flow + reveal. -->
+  <section class="field" id="o-08" data-sc-act="flow" data-sc-drift="#ECEEE9">
+    <div class="sc-wrap field__grid">
+      <figure class="field__fig" data-sc-reveal="left" data-sc-reveal-at="0.12 0.5">
+        <svg viewBox="0 0 600 380" role="img" aria-label="Halı saha planı, yedişer oyunculu iki takım">
+          <rect class="ln" pathLength="1" x="20" y="20" width="560" height="340" rx="4"/>
+          <path class="ln" pathLength="1" d="M300 20 V 360"/>
+          <circle class="ln" pathLength="1" cx="300" cy="190" r="48"/>
+          <rect class="ln" pathLength="1" x="20" y="110" width="80" height="160"/>
+          <rect class="ln" pathLength="1" x="500" y="110" width="80" height="160"/>
+          <rect class="ln" pathLength="1" x="6" y="160" width="14" height="60"/>
+          <rect class="ln" pathLength="1" x="580" y="160" width="14" height="60"/>
+          <g class="fill-ink">
+            <circle cx="48" cy="190" r="7"/><circle cx="130" cy="110" r="7"/><circle cx="130" cy="270" r="7"/>
+            <circle cx="190" cy="190" r="7"/><circle cx="240" cy="90" r="7"/><circle cx="240" cy="290" r="7"/><circle cx="270" cy="190" r="7"/>
+          </g>
+          <g class="t-red">
+            <circle cx="552" cy="190" r="7"/><circle cx="470" cy="120" r="7"/><circle cx="470" cy="260" r="7"/>
+            <circle cx="410" cy="190" r="7"/><circle cx="360" cy="100" r="7"/><circle cx="360" cy="280" r="7"/><circle cx="330" cy="200" r="7"/>
+          </g>
+          <circle cx="300" cy="190" r="4" fill="var(--sc-surface)" stroke="var(--sc-ink)" stroke-width="1.5"/>
+        </svg>
+      </figure>
+      <div class="field__copy" data-sc-in>
+        <h2 class="sc-display sc-display--md">Devler Ligi</h2>
+        <p>Halı saha maçlarını kâğıttan ve mesaj gruplarından kurtaran lig platformu.</p>
+        <dl class="tag">
+          <div><dt>No.</dt><dd>08</dd></div>
+          <div><dt>Ad</dt><dd class="tag__name">Devler Ligi</dd></div>
+          <div><dt>Dönem</dt><dd>Mart 2026, halen</dd></div>
+          <div><dt>Katman</dt><dd>Mobil, web</dd></div>
+          <div><dt>Not</dt><dd>Amatör futbol maçlarını dijitalleştiren kapsamlı lig takip projesi. Flutter ve Dart.</dd></div>
+          <div><dt>Kaynak</dt><dd><a href="https://github.com/Furknay1/Devler_Ligi">Devler_Ligi</a></dd></div>
+        </dl>
+      </div>
+    </div>
+  </section>
+
+  <!-- 05 · Sıradaki. Etiket gibi dizilmiş boş plaka. Son eleman. -->
+  <section class="close" id="o-09" data-sc-act="pin" data-sc-span="1.3" data-sc-drift="#ECEEE9">
+    <div data-sc-stage class="close__stage">
+      <div class="plate">
+        <h2 class="sc-display">Sıradaki çizim boş.</h2>
+        <div class="plate__ask">
+          <dl class="tag">
+            <div><dt>No.</dt><dd>09</dd></div>
+            <div><dt>Ad</dt><dd class="tag__name">Sizin projeniz</dd></div>
+            <div><dt>Dönem</dt><dd>Bir sonraki</dd></div>
+            <div><dt>Katman</dt><dd>Donanımdan modele, hangisi gerekirse</dd></div>
+            <div><dt>Durum</dt><dd>Staj, iş birliği ve proje görüşmelerine açık</dd></div>
+          </dl>
+          <div class="plate__links">
+            <a class="link link--main" href="mailto:furknay1@gmail.com">E-posta gönder</a>
+            <a class="link" href="https://www.linkedin.com/in/furkanay1/">LinkedIn</a>
+            <a class="link" href="https://github.com/Furknay1">GitHub</a>
+          </div>
+        </div>
+      </div>
+      <footer class="colophon mono">
+        <span>Furkan Ay · İstanbul</span>
+        <span>Tüm çizimler kodla yapıldı · 2026</span>
+      </footer>
+    </div>
+  </section>
+
+</main>
+
+<!-- İmza: uçuş kaydı. Kariyer, gerçek tarihlerle bir yörünge. Kaydırma oynatma kafası. -->
+<nav class="tele" aria-label="Uçuş kaydı: projeler dizini">
+  <div class="tele__read">
+    <span class="mono">Uçuş kaydı</span>
+    <span class="tele__t" data-t>T+0</span>
+    <span class="tele__now" data-name>Kalkış</span>
+  </div>
+  <div class="tele__track">
+    <svg aria-hidden="true">
+      <defs><clipPath id="doneclip"><rect id="doneRect" x="-10" y="-20" width="0" height="200"/></clipPath></defs>
+      <g id="axis"></g>
+      <path class="tele__base" id="basePath" d=""/>
+      <path class="tele__done" id="donePath" d="" clip-path="url(#doneclip)"/>
+      <circle class="tele__ring" id="ring" r="9" cx="0" cy="0"/>
+      <circle class="tele__head" id="head" r="4" cx="0" cy="0"/>
+    </svg>
+    <div id="marks"></div>
+  </div>
+</nav>
+
+<script src="scrollcraft.js"></script>
+<script>
+ScrollCraft.mount(document.body);
+
+(function () {
+  var reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var clamp = function (v) { return v < 0 ? 0 : v > 1 ? 1 : v; };
+
+  /* uçak pencereleri */
+  var w = '';
+  for (var x = 270; x < 750; x += 17) w += 'M' + x + ' 190h8';
+  document.getElementById('windows').setAttribute('d', w);
+
+  /* ------------------------------------------------------------ uçuş kaydı
+     t: proje başlangıcı (ondalık yıl). alt: o tarihe kadar başlanmış proje
+     sayısı. İkisi de profil README'sindeki gerçek tarihlerden. */
+  var LOG = [
+    { id: 'o-00', t: 2018.7,  alt: 0, date: '',         name: 'Kalkış: Furkan Ay' },
+    { id: 'o-01', t: 2019.0,  alt: 1, date: '2019',     name: 'Arduino geliştirme' },
+    { id: 'o-02', t: 2024.25, alt: 2, date: 'Nis 2024', name: 'Roket simülasyonu' },
+    { id: 'o-03', t: 2024.83, alt: 3, date: 'Kas 2024', name: 'Benzin istasyonu otomasyonu' },
+    { id: 'o-04', t: 2025.17, alt: 4, date: 'Mar 2025', name: 'Nmap port tarama' },
+    { id: 'o-05', t: 2025.5,  alt: 5, date: 'Tem 2025', name: 'Yerel sesli asistan' },
+    { id: 'o-06', t: 2025.75, alt: 6, date: 'Eki 2025', name: 'OCPP şarj yönetimi' },
+    { id: 'o-07', t: 2025.83, alt: 7, date: 'Kas 2025', name: 'Uçak bakım yapay zekası' },
+    { id: 'o-08', t: 2026.17, alt: 8, date: 'Mar 2026', name: 'Devler Ligi' },
+    { id: 'o-09', t: 2026.85, alt: 9, date: 'Şimdi',    name: 'Sıradaki: sizin projeniz' }
+  ];
+  var T0 = 2018.7, T1 = 2026.85, ALTMAX = 9;
+
+  var track = document.querySelector('.tele__track');
+  var svg = track.querySelector('svg');
+  var marks = document.getElementById('marks');
+  var nowT = document.querySelector('[data-t]');
+  var nowName = document.querySelector('[data-name]');
+  var basePath = document.getElementById('basePath');
+  var donePath = document.getElementById('donePath');
+  var doneRect = document.getElementById('doneRect');
+  var head = document.getElementById('head'), ring = document.getElementById('ring');
+  var axis = document.getElementById('axis');
+
+  var W = 0, H = 0, PAD = 10;
+  function px(t) { return ((t - T0) / (T1 - T0)) * W; }
+  function py(a) { return H - PAD - (a / ALTMAX) * (H - PAD * 2); }
+
+  LOG.forEach(function (s) {
+    var b = document.createElement('button');
+    b.type = 'button'; b.className = 'mk';
+    b.setAttribute('aria-label', (s.date ? s.date + ', ' : '') + s.name);
+    b.innerHTML = '<span class="mk__tip">' + (s.date ? s.date + ' · ' : '') + s.name + '</span>';
+    b.addEventListener('click', function () {
+      window.scrollTo({ top: s.y, behavior: reduce ? 'auto' : 'smooth' });
+    });
+    marks.appendChild(b); s.btn = b;
+  });
+
+  var P = [];
+  function drawTrace() {
+    var r = track.getBoundingClientRect();
+    W = r.width; H = r.height;
+    svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+    P = LOG.map(function (s) { return [px(s.t), py(s.alt)]; });
+    var d = 'M' + P[0][0].toFixed(1) + ' ' + P[0][1].toFixed(1);
+    for (var i = 0; i < P.length - 1; i++) {
+      var p0 = P[i - 1] || P[i], p1 = P[i], p2 = P[i + 1], p3 = P[i + 2] || p2;
+      var lo = Math.min(p1[1], p2[1]), hi = Math.max(p1[1], p2[1]);
+      var c1x = p1[0] + (p2[0] - p0[0]) / 6, c1y = Math.min(Math.max(p1[1] + (p2[1] - p0[1]) / 6, lo), hi);
+      var c2x = p2[0] - (p3[0] - p1[0]) / 6, c2y = Math.min(Math.max(p2[1] - (p3[1] - p1[1]) / 6, lo), hi);
+      c1x = Math.min(Math.max(c1x, p1[0]), p2[0]); c2x = Math.min(Math.max(c2x, p1[0]), p2[0]);
+      d += ' C' + c1x.toFixed(1) + ' ' + c1y.toFixed(1) + ' ' + c2x.toFixed(1) + ' ' + c2y.toFixed(1) + ' ' + p2[0].toFixed(1) + ' ' + p2[1].toFixed(1);
+    }
+    basePath.setAttribute('d', d); donePath.setAttribute('d', d);
+    var ax = '';
+    for (var y = 2019; y <= 2026; y++) {
+      var X = px(y);
+      ax += '<line class="tele__axis" x1="' + X.toFixed(1) + '" x2="' + X.toFixed(1) + '" y1="' + (H - 5) + '" y2="' + H + '"/>' +
+            '<text class="tele__yr" x="' + (X + 3).toFixed(1) + '" y="' + (H - 1) + '">' + y + '</text>';
+    }
+    axis.innerHTML = ax;
+    LOG.forEach(function (s, i) {
+      s.btn.style.left = P[i][0] + 'px'; s.btn.style.top = P[i][1] + 'px';
+    });
+  }
+
+  /* her istasyonun "şu an bu nesne" kaydırma konumu */
+  function anchors() {
+    var vh = innerHeight, vw = innerWidth, sy = scrollY;
+    var max = document.documentElement.scrollHeight - vh;
+    var arch = document.getElementById('arsiv');
+    var rail = arch.querySelector('.rail');
+    var aTop = arch.getBoundingClientRect().top + sy, aTravel = arch.offsetHeight - vh;
+    var over = rail.scrollWidth - vw;
+    LOG.forEach(function (s) {
+      var el = document.getElementById(s.id);
+      if (s.id === 'o-00') s.y = 0;
+      else if (el.closest('.rail')) {
+        var c = el.offsetLeft + el.offsetWidth / 2 - vw / 2;
+        s.y = aTop + clamp(c / Math.max(over, 1)) * aTravel;
+      } else if (s.id === 'o-07') {
+        s.y = el.getBoundingClientRect().top + sy + (el.offsetHeight - vh) * 0.15;
+      } else if (s.id === 'o-09') s.y = max;
+      else s.y = el.getBoundingClientRect().top + sy - vh * 0.3;
+      s.y = Math.max(0, Math.min(Math.round(s.y), max));
+    });
+    for (var i = 1; i < LOG.length; i++) if (LOG[i].y <= LOG[i - 1].y) LOG[i].y = LOG[i - 1].y + 1;
+  }
+
+  function fmtT(t) {
+    if (t < 2019) return 'T−' + Math.max(1, Math.round((2019 - t) * 12)) + ' ay';
+    var m = Math.round((t - 2019) * 12);
+    return 'T+' + Math.floor(m / 12) + ' yıl ' + (m % 12) + ' ay';
+  }
+
+  var lastI = -1;
+  function tele(y) {
+    var i = 0;
+    while (i < LOG.length - 1 && y >= LOG[i + 1].y) i++;
+    var a = LOG[i], b = LOG[Math.min(i + 1, LOG.length - 1)];
+    var f = b === a ? 0 : clamp((y - a.y) / (b.y - a.y));
+    var t = a.t + (b.t - a.t) * f, al = a.alt + (b.alt - a.alt) * f;
+    var hx = P[i][0] + ((P[Math.min(i + 1, P.length - 1)][0]) - P[i][0]) * f;
+    var hy = P[i][1] + ((P[Math.min(i + 1, P.length - 1)][1]) - P[i][1]) * f;
+    doneRect.setAttribute('width', Math.max(hx + 10, 0.1));
+    head.setAttribute('cx', hx); head.setAttribute('cy', hy);
+    ring.setAttribute('cx', hx); ring.setAttribute('cy', hy);
+    nowT.textContent = fmtT(t) + ' · irtifa ' + String(Math.round(al)).padStart(2, '0');
+    if (i !== lastI) {
+      nowName.textContent = a.name;
+      LOG.forEach(function (s, k) {
+        s.btn.classList.toggle('is-passed', k <= i);
+        s.btn.classList.toggle('is-current', k === i);
+        if (k === i) s.btn.setAttribute('aria-current', 'step'); else s.btn.removeAttribute('aria-current');
+      });
+      lastI = i;
+    }
+  }
+
+  /* ------------------------------------------------- çizimler kendini çizer */
+  var objs = Array.prototype.slice.call(document.querySelectorAll('.obj'));
+  var peak = document.querySelector('.peak');
+  var ramp = function (p, a, b) { return clamp((p - a) / (b - a)); };
+
+  function frame() {
+    var vw = innerWidth, vh = innerHeight;
+    objs.forEach(function (o, k) {
+      var d = 1;
+      if (!reduce && k > 0) {
+        var r = o.getBoundingClientRect();
+        d = clamp((vw - r.left) / (vw * 0.5));
+      }
+      o.style.setProperty('--draw', d.toFixed(3));
+    });
+    if (!reduce) {
+      var pr = peak.getBoundingClientRect();
+      var p = clamp(-pr.top / Math.max(pr.height - vh, 1));
+      peak.style.setProperty('--a', ramp(p, 0.0, 0.4).toFixed(3));
+      peak.style.setProperty('--b', ramp(p, 0.36, 0.52).toFixed(3));
+      peak.style.setProperty('--c1', ramp(p, 0.5, 0.6).toFixed(3));
+      peak.style.setProperty('--c2', ramp(p, 0.6, 0.7).toFixed(3));
+      peak.style.setProperty('--c3', ramp(p, 0.7, 0.8).toFixed(3));
+    }
+    tele(scrollY);
+  }
+
+  var queued = false;
+  function onScroll() { if (!queued) { queued = true; requestAnimationFrame(function () { queued = false; frame(); }); } }
+  function layout() { drawTrace(); anchors(); frame(); }
+
+  addEventListener('scroll', onScroll, { passive: true });
+  addEventListener('resize', function () { requestAnimationFrame(layout); });
+  addEventListener('load', layout);
+  if (document.fonts) document.fonts.ready.then(layout);
+  layout();
+  setTimeout(layout, 400);
+})();
+</script>
+</body>
+</html>
